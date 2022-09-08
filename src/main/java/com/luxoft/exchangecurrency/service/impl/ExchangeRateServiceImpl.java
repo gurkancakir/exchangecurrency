@@ -17,6 +17,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -32,13 +34,16 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
     }
 
     private void readFile(String data) {
-        List<String> lines = data.lines().toList();
-        List<ExchangeRate> exchangeRateList = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i++) {
-            String[] rates = lines.get(i).split(" ");
-            exchangeRateList.add(new ExchangeRate(i + 1, new BigDecimal(rates[0]), new BigDecimal(rates[1])));
-        }
+        AtomicInteger atomicInteger = new AtomicInteger(1);
+        List<ExchangeRate> exchangeRateList = data.lines()
+                .map(line -> mapToExchangeRate(line, atomicInteger.getAndIncrement()))
+                        .collect(Collectors.toList());
         ExchangeRateStorage.getInstance().setExchangeRateList(exchangeRateList);
+    }
+
+    private ExchangeRate mapToExchangeRate(String line, int day) {
+        String[] rates = line.split(" ");
+        return new ExchangeRate(day, new BigDecimal(rates[0]), new BigDecimal(rates[1]));
     }
 
 
@@ -49,22 +54,30 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
     @Override
     public List<ExchangeRateDto> listPossible() {
-        BigDecimal localAmount = new BigDecimal("1000");
         List<ExchangeRateDto> exchangeRateDtoList = new ArrayList<>();
         List<ExchangeRate> exchangeRateList = ExchangeRateStorage.getInstance().getExchangeRateList();
         for (int i = 0; i <exchangeRateList.size(); i++) {
             for (int j = i + 1; j < exchangeRateList.size(); j++) {
-                if (exchangeRateList.get(i).getSellExchangeRate().compareTo(exchangeRateList.get(j).getBuyExchangeRate()) < 0) {
-                    BigDecimal gain = localAmount
-                            .divide(exchangeRateList.get(i).getSellExchangeRate(), 14, RoundingMode.HALF_DOWN)
-                            .multiply(exchangeRateList.get(j).getBuyExchangeRate())
-                            .subtract(localAmount);
+                if (this.isSellExchangeRateLower(exchangeRateList, i, j)) {
+                    BigDecimal gain = this.calculateGain(exchangeRateList.get(i).getSellExchangeRate(), exchangeRateList.get(j).getBuyExchangeRate());
                     exchangeRateDtoList.add(new ExchangeRateDto(exchangeRateList.get(i), exchangeRateList.get(j), gain));
                 }
             }
         }
         Collections.sort(exchangeRateDtoList);
         return exchangeRateDtoList;
+    }
+
+    private boolean isSellExchangeRateLower(List<ExchangeRate> exchangeRateList, int i, int j) {
+        return exchangeRateList.get(i).getSellExchangeRate().compareTo(exchangeRateList.get(j).getBuyExchangeRate()) < 0;
+    }
+
+    private BigDecimal calculateGain(BigDecimal sellExchangeRate, BigDecimal buyExchangeRate) {
+        BigDecimal localAmount = new BigDecimal("1000");
+        return localAmount
+                .divide(sellExchangeRate, 14, RoundingMode.HALF_DOWN)
+                .multiply(buyExchangeRate)
+                .subtract(localAmount);
     }
 
     @Override
