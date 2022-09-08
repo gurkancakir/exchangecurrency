@@ -17,12 +17,12 @@
   "buyRate": {
     "day": 11,
     "buyExchangeRate": 132,
-    "sellExchangeRate": 136    # using this rate, buy local currency to foreign 
+    "sellExchangeRate": 136    // using this rate, buy local currency to foreign 
   },
   "sellRate": {
     "day": 13,
     "buyExchangeRate": 142,
-    "sellExchangeRate": 144    # using this rate, sell foregin to local currency
+    "sellExchangeRate": 144    // using this rate, sell foregin to local currency
   },
   "gain": 44.11764705882378
 }
