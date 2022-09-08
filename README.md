@@ -21,8 +21,8 @@
   },
   "sellRate": {
     "day": 13,
-    "buyExchangeRate": 142,
-    "sellExchangeRate": 144    // using this rate, sell foregin to local currency
+    "buyExchangeRate": 142,    // using this rate, sell foregin to local currency
+    "sellExchangeRate": 144
   },
   "gain": 44.11764705882378
 }
